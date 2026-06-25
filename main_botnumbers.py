@@ -1,3 +1,4 @@
+"""
 # https://t.me/MyFirst16071990Bot
 # создать файл .env
 # pip install python-dotenv
@@ -148,7 +149,7 @@ async def process_other_answer(message: Message):
 # запуск бота
 if __name__ == '__main__':
     dp.run_polling(bot)
-
+"""
 
 
 
