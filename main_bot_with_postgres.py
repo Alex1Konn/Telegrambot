@@ -66,3 +66,6 @@ def process_delete_command(message):
 
 # Запуск бота
 bot.polling()
+
+"""задание
+"""

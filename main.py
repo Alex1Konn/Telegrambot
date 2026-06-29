@@ -53,3 +53,5 @@ async def cmd_start(message:Message):
 
 @dp.message(Command("mem"))
 async def cmd_mem(message:Message):
+
+    мппп
