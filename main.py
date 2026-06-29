@@ -1,10 +1,7 @@
-# https://t.me/MyFirst16071990Bot
-# создать файл .env
-# pip install python-dotenv
-# пото в ENV файле создать константу TELEGRAM_API_KEY= и вписать туда апи
-
 #загрузка переменных из файла .env
 import os
+import logging
+import aiohttp
 from dotenv import load_dotenv
 load_dotenv()
 TELEGRAM_API_KEY=os.getenv("TELEGRAM_API_KEY")
@@ -15,147 +12,71 @@ import asyncio
 import random
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import Message
 
 # Создаем объект бот и диспетчер
 bot=Bot(token=TELEGRAM_API_KEY)
 dp=Dispatcher()
-"""
-#камень - ножницы - бумага
-CHOICES = {
-    "rock": {'emoji': "✊", "text":"камень"},
-    "scissors": {'emoji': "✌️", "text":"ножницы"},
-    "paper": {'emoji': "✋", "text":"бумага"}
-}
 
-def get_game_keyboard():
-    builder = InlineKeyboardBuilder()
-    builder.button(text="✊ Kамень", callback_data="game:rock")
-    builder.button(text="️✌️ Ножницы", callback_data="game:scissors")
-    builder.button(text="️✋ Бумага", callback_data="game:paper")
-    builder.adjust(3)
-    return builder.as_markup()
+#Настройка логирования
+#Посмотреть разные уровни логирования
+logging.basicConfig(level=logging.INFO)
 
-def determine_winner(user_choice:str, bot_choice:str):
-    if user_choice == bot_choice:
-        return "draw"
-
-    wins = {
-        "rock":"scissors",
-        "scissors":"paper",
-        "paper":"rock"
-    }
-    return "win" if wins[user_choice] == bot_choice else "lose"
+async def get_image():
+    """Получает случайную картинку и првоерка ответа по АПи.
+    Универальная констуркция которую можно использовать в будущем"""
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://api.thecatapi.com/v1/images/search") as response:
+            if response.status != 200:
+                data = await response.json()
+                return data[0]['url']
+            return None
 
 @dp.message(CommandStart())
-async def cmd_start(message:types.Message):
+async def cmd_start(message:Message):
     await message.answer(
-        "<b>Камень, Ножницы, Бумага!</b>\n\n"
-        "Выбери свой ход:",
-        reply_markup=get_game_keyboard(),
-        parse_mode="HTML"
+        "Привет! Я бот который присылает картинки котиков!\n"
+        "Используй  команды: \n"
+        "/cat - получить слуйчайного котика\n"
+        "/help - показать помощь"
     )
 
-@dp.callback_query(F.data.startswitch("game:"))
-async def process_game(callback:types.CallbackQuery):
-    user_choice = callback.data.split(":")[1]
-    bot_choice = random.choice(list(CHOICES.keys()))
-
-    result = determine_winner(user_choice, bot_choice)
-
-    result_text = {
-        "win": "🏆 <b> Ты победил! </b>",
-        "lose": "⛈️ <b> Бот победил! </b>",
-        "draw": "🤝 <b> Ничья! </b>"
-    }
-
-    text = (
-        f"{result_text[result]}\n\n"
-        f"Твой выбор {CHOICES[user_choice]['emoji']} {CHOICES[user_choice]['text']}\n"
-        f"Выбор бота {CHOICES[bot_choice]['emoji']} {CHOICES[bot_choice]['text']}\n"
-        f"Сыграть ещё?"
-    )
-    await callback.message.edit_text(
-        text=text,
-        reply_markup=get_game_keyboard(),
-        parse_mode="html"
-    )
-
-    await callback.answer()
-"""
- #камень-ножницы-бумага-ящерица-спок
-
-CHOICES = {
-    "rock": {'emoji': "✊", "text":"камень"},
-    "scissors": {'emoji': "✌️", "text":"ножницы"},
-    "paper": {'emoji': "✋", "text":"бумага"},
-    "lizard": {'emoji': " 🦎", "text":"ящерица"},
-    "Spock": {'emoji': "🖖", "text":"Спок"}
-}
-
-def get_game_keyboard():
-    builder = InlineKeyboardBuilder()
-    builder.button(text="✊ Kамень", callback_data="game:rock")
-    builder.button(text="️✌️ Ножницы", callback_data="game:scissors")
-    builder.button(text="️✋ Бумага", callback_data="game:paper")
-    builder.button(text="️🦎 Ящерица", callback_data="game:lizard")
-    builder.button(text="️🖖 Спок", callback_data="game:Spock")
-    builder.adjust(5)
-    return builder.as_markup()
-
-def determine_winner(user_choice:str, bot_choice:str):
-    if user_choice == bot_choice:
-        return "draw"
-
-    wins = {
-        "rock":"scissors",
-        "scissors":"paper",
-        "paper":"rock",
-        "lizard":"Spock",
-        "Spock":"rock"
-    }
-    return "win" if wins[user_choice] == bot_choice else "lose"
-
-@dp.message(CommandStart())
-async def cmd_start(message:types.Message):
+@dp.message(Command("help"))
+async def cmd_help(message:Message):
     await message.answer(
-        "<b>Камень, Ножницы, Бумага, Ящериц, Спок!</b>\n\n"
-        "Выбери свой ход:",
-        reply_markup=get_game_keyboard(),
-        parse_mode="HTML"
+        "Доступные команды:\n"
+        "/start - начать работу с ботом\n"
+        "/cat - получить слуйчайного котика\n"
+        "или вместо /cat написать любое из слов 'кот', 'котик', 'cat'\n"
+        "/help - показать помощь\n"
     )
 
-@dp.callback_query(F.data.startswitch("game:"))
-async def process_game(callback:types.CallbackQuery):
-    user_choice = callback.data.split(":")[1]
-    bot_choice = random.choice(list(CHOICES.keys()))
+@dp.message(Command("cat"))
+async def cmd_cat(message:Message):
+    await message.answer("Ищу котика..🔎🐾")
+    cat_url = await get_image()
 
-    result = determine_winner(user_choice, bot_choice)
+    if cat_url:
+        await message.answer_photo(photo=cat_url, caption="Вот твой котик 🐈")
+    else:
+        await message.answer("Упс, котики ушли кушать  🌭. Попробуй еще раз")
 
-    result_text = {
-        "win": "🏆 <b> Ты победил! </b>",
-        "lose": "⛈️ <b> Бот победил! </b>",
-        "draw": "🤝 <b> Ничья! </b>"
-    }
+@dp.message(F.text.lower().in_({'кот', 'котик', 'cat'}))
+async def cmd_start(message:Message):
+    cat_url = await get_image()
+    await message.answer("Ищу котика..🔎🐾")
+    cat_url = await get_image()
 
-    text = (
-        f"{result_text[result]}\n\n"
-        f"Твой выбор {CHOICES[user_choice]['emoji']} {CHOICES[user_choice]['text']}\n"
-        f"Выбор бота {CHOICES[bot_choice]['emoji']} {CHOICES[bot_choice]['text']}\n"
-        f"Сыграть ещё?"
-    )
-    await callback.message.edit_text(
-        text=text,
-        reply_markup=get_game_keyboard(),
-        parse_mode="html"
-    )
+    if cat_url:
+        await message.answer_photo(photo=cat_url, caption="Вот твой котик 🐈")
+    else:
+        await message.answer("Упс, котики ушли кушать  🌭. Попробуй еще раз")
 
-    await callback.answer()
 async def main():
-    await dp.start_polling(bot)
-# запуск бота
-if __name__ == '__main__':
+    print("Бот запущен!")
+    await dp.start_polling()
+
+if __name__ == "__main__":
     asyncio.run(main())
 
 
