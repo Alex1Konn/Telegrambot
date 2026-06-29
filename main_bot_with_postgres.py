@@ -1,6 +1,7 @@
 https://api.thecatapi.com/v1/images/search
 
-import telebot
+# import telebot
+
 import psycopg2
 
 # Подключение к базе данных PostgreSQL
